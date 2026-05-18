@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Rezerwacji - Podpis Palcem</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e67e22;
+            --vip-color: #9b59b6;
+            --bg-color: #f5f6fa;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .vip-title {
+            color: var(--vip-color);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .amount-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .amount-group select {
+            flex: 1;
+        }
+
+        .amount-group input {
+            flex: 2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 15px;
+        }
+
+        .optional-text {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--vip-color);
+            font-weight: bold;
+            margin-top: 2px;
+            margin-bottom: 8px;
+        }
+
+        /* KAFELKI VIP */
+        .vip-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 5px;
+        }
+
+        .vip-option {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            text-align: left;
+            user-select: none;
+        }
+
+        .vip-option.selected {
+            background: #f3e5f5;
+            border-color: var(--vip-color);
+            color: #4a148c;
+            font-weight: bold;
+            box-shadow: inset 3px 0 0 var(--vip-color);
+        }
+
+        .vip-unlock-box {
+            background: #f3e5f5;
+            border: 2px dashed var(--vip-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .vip-special-fields {
+            background: #faf5ff;
+            border-left: 5px solid var(--vip-color);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .dynamic-fields-container {
+            background: #fdfefe;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .sub-field {
+            margin-bottom: 10px;
+        }
+        .sub-field:last-child {
+            margin-bottom: 0;
+        }
+
+        /* PANEL RYSOWANIA PODPISU */
+        .signature-container {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fafafa;
+            position: relative;
+            margin-bottom: 5px;
+            overflow: hidden;
+        }
+
+        #signaturePad {
+            display: block;
+            width: 100%;
+            height: 160px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .signature-line {
+            position: absolute;
+            bottom: 35px;
+            left: 5%;
+            width: 90%;
+            border-bottom: 1px dashed #b2bec3;
+            pointer-events: none;
+        }
+
+        .signature-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 11px;
+            color: #b2bec3;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary { background-color: var(--accent-color); }
+        .btn-primary:hover { background-color: #d35400; }
+        
+        .btn-vip { background-color: var(--vip-color); }
+        .btn-vip:hover { background-color: #8e44ad; }
+
+        .btn-secondary { background-color: #7f8c8d; }
+        .btn-secondary:hover { background-color: #647475; }
+
+        .chef-section {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+
+        /* MINI LISTA ZAMÓWIEŃ */
+        .reservation-card {
+            background: white;
+            padding: 8px 10px;
+            margin-top: 8px;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .reservation-card.vip-card {
+            border-left: 4px solid var(--vip-color);
+            background: #fff9ff;
+        }
+
+        .badge-vip {
+            background: var(--vip-color);
+            color: white;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .mini-vip-details {
+            margin-top: 4px;
+            padding: 4px;
+            background: #f3e5f5;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 2px solid var(--vip-color);
+        }
+
+        .chef-signature-img {
+            display: block;
+            height: 50px;
+            width: auto;
+            background: #ffffff;
+            border-radius: 4px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .btn-danger { background-color: #e74c3c; width: auto; padding: 4px 8px; font-size: 12px; margin-right: 5px; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-edit { background-color: #3498db; width: auto; padding: 4px 8px; font-size: 12px; margin-right: 5px; }
+        .btn-edit:hover { background-color: #2980b9; }
+        .btn-small { padding: 6px 12px; font-size: 13px; display: inline-block; margin-top: 5px;}
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 6px;
+            justify-content: flex-end;
+        }
+
+        .pass-box {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="mainTitle">🍕 System Zamówień 🥤</h1>
+    
+    <form id="reservationForm">
+        <div class="form-group">
+            <label for="category">Co wybierasz?</label>
+            <select id="category" onchange="handleCategoryChange()" required>
+                <option value="Jedzenie">🍕 Jedzenie</option>
+                <option value="Picie">🥤 Picie</option>
+                <option value="Przekąski">🍿 Przekąski</option>
+                <option value="Jedzenie i Picie">🍕🥤 Jedzenie i Picie</option>
+                <option value="Jedzenie i Przekąski">🍕🍿 Jedzenie i Przekąski</option>
+                <option value="Picie i Przekąski">🥤🍿 Picie i Przekąski</option>
+                <option value="Wszystko (Jedzenie, Picie i Przekąski)">🍕🥤🍿 Wszystko (Jedzenie, Picie i Przekąski)</option>
+                <option value="VIP">⭐ Opcja VIP (Wymaga Hasła)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Ile potrzebujesz? (Wpisz ilość i wybierz jednostkę)</label>
+            <div class="amount-group">
+                <select id="quantityUnit" required>
+                    </select>
+                <input type="text" id="quantityValue" placeholder="Wpisz liczbę (np. 2 lub 500)" required>
+            </div>
+        </div>
+
+        <div id="vipUnlockBox" class="vip-unlock-box">
+            <label for="vipInputPassword" style="color: var(--vip-color);">Ta sekcja jest zablokowana. Podaj hasło VIP:</label>
+            <input type="password" id="vipInputPassword" placeholder="Wpisz hasło VIP">
+            <button type="button" class="btn-vip btn-small" onclick="verifyVipPassword()" style="margin-top: 10px; width:100%;">Odblokuj Menu VIP</button>
+        </div>
+
+        <div class="dynamic-fields-container" id="dynamicFieldsContainer"></div>
+
+        <div class="form-group">
+            <label for="extras">Dodatki (np. sosy, przyprawy) <span class="optional-text">(opcjonalne)</span></label>
+            <input type="text" id="extras" placeholder="Np. sos czosnkowy, ketchup">
+        </div>
+
+        <div class="form-group">
+            <label for="deliveryLocation">Gdzie mamy to dostarczyć?</label>
+            <select id="deliveryLocation" onchange="handleLocationChange()" required>
+                <option value="Pokój">🛏️ Pokój</option>
+                <option value="Salon">🛋️ Salon</option>
+                <option value="Ogród / Podwórko">🏡 Ogród / Podwórko</option>
+                <option value="Kuchnia">🍳 Kuchnia</option>
+                <option value="Inne">📍 Inne miejsce...</option>
+            </select>
+            <input type="text" id="customLocationInput" placeholder="Wpisz gdzie dostarczyć..." style="display: none; margin-top: 8px;">
+        </div>
+
+        <div id="vipSpecialFields" class="vip-special-fields">
+            <h3 class="vip-title">👑 Opcje Ekskluzywne VIP</h3>
+            
+            <div class="form-group">
+                <label>Życzenia w jedzeniu i przekąskach:</label>
+                <div class="help-text">👉 Instrukcja: Wybierz dokładnie 2 opcje z poniższych:</div>
+                <div class="vip-grid" id="gridExtras">
+                    <div class="vip-option" data-value="🧀 Dodatkowy potrójny ser">🧀 Dodatkowy roztopiony potrójny ser</div>
+                    <div class="vip-option" data-value="🍿 Wysoka piramida z chrupek/chipsów">🍿 Wysoka piramida z chrupek, chipsów lub nachosów</div>
+                    <div class="vip-option" data-value="🍬 Słodka niespodzianka (żelki/czekolada)">🍬 Słodka niespodzianka (żelki, pianki lub czekolada)</div>
+                    <div class="vip-option" data-value="🎨 Wzorek lub napis z ketchupu/sosu">🎨 Fajny wzorek lub napis zrobiony z ketchupu na talerzu</div>
+                    <div class="vip-option" data-value="🍏 Świeże owoce pokrojone w cząstki">🍏 Świeże owoce pokrojone w ładne cząstki</div>
+                    <div class="vip-option" data-value="🧂 Zestaw różnych sosów do maczania">🧂 Zestaw ułożonych obok siebie różnych sosów domowych</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Sposób podania & Domowe Napoje:</label>
+                <div class="help-text">👉 Instrukcja: Wybierz dokładnie 2 opcje z poniższych:</div>
+                <div class="vip-grid" id="gridServing">
+                    <div class="vip-option" data-value="🥤 Napój z lodem i rurką">🥤 Napój z dużą ilością kostek lodu i kolorową rurką</div>
+                    <div class="vip-option" data-value="🍋 Szklanka z plasterkiem owocu">🍋 Szklanka udekorowana plasterkiem cytryny lub pomarańczy</div>
+                    <div class="vip-option" data-value="🍽️ Podanie na największym talerzu">🍽️ Podanie na największym i najładniejszym talerzu</div>
+                    <div class="vip-option" data-value="⭐ Ekskluzywny sposób podania VIP">⭐ Zamówienie podane w specjalny, ekskluzywny sposób VIP</div>
+                    <div class="vip-option" data-value="🏷️ Karteczka z Twoim imieniem">🏷️ Przyklejona do szklanki karteczka z Twoim imieniem</div>
+                    <div class="vip-option" data-value="🎵 Wniesienie przy muzyce z telefonu">🎵 Wniesienie jedzenia przy głośnej muzyce z telefonu</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="timeTarget">Na kiedy ma być gotowe?</label>
+            <input type="datetime-local" id="timeTarget" required>
+        </div>
+
+        <div class="form-group">
+            <label for="clientName">Imię i Nazwisko</label>
+            <input type="text" id="clientName" placeholder="Jan Kowalski" required>
+        </div>
+
+        <div class="form-group">
+            <label>Podpisz się poniżej (Zamaluj palcem):</label>
+            <div class="signature-container">
+                <div class="signature-line"></div>
+                <div class="signature-hint">Tutaj złóż podpis</div>
+                <canvas id="signaturePad"></canvas>
+            </div>
+            <button type="button" class="btn-secondary btn-small" onclick="clearSignature()" style="width:auto; margin-top:0;">Wyczyść podpis</button>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-primary">Złóż rezerwację</button>
+    </form>
+
+    <hr>
+
+    <div class="chef-section">
+        <h2>👨‍🍳 Panel Kucharza 👨‍🍳</h2>
+        
+        <div id="loginForm">
+            <div class="form-group">
+                <label for="chefPassword">Podaj hasło kucharza:</label>
+                <input type="password" id="chefPassword" placeholder="Wpisz hasło">
+            </div>
+            <button type="button" class="btn-primary" onclick="checkPassword()">Wejdź do panelu</button>
+        </div>
+
+        <div id="chefContent" style="display: none;">
+            
+            <div class="pass-box">
+                <label for="newPassword">Zmień hasło Kucharza:</label>
+                <input type="text" id="newPassword" placeholder="Nowe hasło" style="margin-bottom: 5px; padding: 6px;">
+                <button type="button" class="btn-edit btn-small" onclick="changePassword('chefPassword', 'newPassword')">Zapisz hasło kucharza</button>
+            </div>
+
+            <div class="pass-box" style="border: 1px solid var(--vip-color);">
+                <label for="newVipPassword" style="color: var(--vip-color);">Zmień hasło VIP:</label>
+                <input type="text" id="newVipPassword" placeholder="Nowe hasło VIP" style="margin-bottom: 5px; padding: 6px;">
+                <button type="button" class="btn-vip btn-small" onclick="changePassword('vipPassword', 'newVipPassword')">Zapisz hasło VIP</button>
+            </div>
+
+            <h3>Lista Zamówień (Mała)</h3>
+            <div id="reservationsList"></div>
+            
+            <button type="button" class="btn-danger btn-small" onclick="logoutChef()" style="margin-top: 15px; width: 100%;">Wyloguj się</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    if (!localStorage.getItem('chefPassword')) localStorage.setItem('chefPassword', '7987');
+    if (!localStorage.getItem('vipPassword')) localStorage.setItem('vipPassword', '9999'); 
+    if (!localStorage.getItem('reservations')) localStorage.setItem('reservations', JSON.stringify([]));
+
+    let reservations = JSON.parse(localStorage.getItem('reservations'));
+    let editingId = null; 
+    let isVipUnlocked = false; 
+
+    // --- LOGIKA OBSŁUGI CANVASU ---
+    const canvas = document.getElementById('signaturePad');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 160;
+        ctx.strokeStyle = "#2c3e50";
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 100);
+
+    function getEventPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+        } else {
+            return { x: e.offsetX !== undefined ? e.offsetX : e.clientX - rect.left, y: e.offsetY !== undefined ? e.offsetY : e.clientY - rect.top };
+        }
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const pos = getEventPos(e);
+        lastX = pos.x; lastY = pos.y;
+        const hint = document.querySelector('.signature-hint');
+        if(hint) hint.style.opacity = '0';
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, ctx.lineWidth / 2, 0, Math.PI * 2);
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const pos = getEventPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastX = pos.x; lastY = pos.y;
+    }
+
+    function stopDrawing() { isDrawing = false; }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    window.addEventListener('touchend', stopDrawing);
+
+    function clearSignature() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const hint = document.querySelector('.signature-hint');
+        if(hint) hint.style.opacity = '1';
+    }
+
+    // --- INTERFJS LOGIKI JEDNOSTEK (Dopasowane pod Twoją prośbę) ---
+    function updateUnitOptions(selectedCategory) {
+        const unitSelect = document.getElementById('quantityUnit');
+        const currentSelection = unitSelect.value;
+        unitSelect.innerHTML = '';
+
+        const kgOption = '<option value="kg">Kilogramy (kg)</option>';
+        const gOption = '<option value="g">Gramy (g)</option>';
+        const mlOption = '<option value="ml">Mililitry (ml)</option>';
+
+        if (selectedCategory === 'Picie') {
+            // Samo picie -> tylko mililitry
+            unitSelect.innerHTML = mlOption;
+        } else if (selectedCategory === 'Jedzenie' || selectedCategory === 'Przekąski' || selectedCategory === 'Jedzenie i Przekąski') {
+            // Rzeczy stałe -> tylko g i kg
+            unitSelect.innerHTML = kgOption + gOption;
+        } else {
+            // Mieszane (Jedzenie i Picie, Picie i Przekąski, Wszystko, VIP) -> wszystko dostępne
+            unitSelect.innerHTML = kgOption + gOption + mlOption;
+        }
+
+        // Jeśli poprzednio wybrana jednostka dalej istnieje na nowej liście, zostaw ją zaznaczoną
+        if (unitSelect.querySelector(`option[value="${currentSelection}"]`)) {
+            unitSelect.value = currentSelection;
+        }
+    }
+
+    // --- LOKALIZACJA ---
+    function handleLocationChange() {
+        const select = document.getElementById('deliveryLocation');
+        const customInput = document.getElementById('customLocationInput');
+        if (select.value === 'Inne') {
+            customInput.style.display = 'block';
+            customInput.required = true;
+        } else {
+            customInput.style.display = 'none';
+            customInput.required = false;
+            customInput.value = '';
+        }
+    }
+
+    function getSelectedLocation() {
+        const select = document.getElementById('deliveryLocation');
+        if (select.value === 'Inne') return document.getElementById('customLocationInput').value;
+        return select.value;
+    }
+
+    function setSelectedLocation(value) {
+        const select = document.getElementById('deliveryLocation');
+        const customInput = document.getElementById('customLocationInput');
+        if (['Pokój', 'Salon', 'Ogród / Podwórko', 'Kuchnia'].includes(value)) {
+            select.value = value;
+            customInput.style.display = 'none';
+            customInput.value = '';
+        } else if (value) {
+            select.value = 'Inne';
+            customInput.style.display = 'block';
+            customInput.value = value;
+        }
+    }
+
+    // --- KAFELKI VIP ---
+    function setupGridSelection(gridId) {
+        const container = document.getElementById(gridId);
+        const options = container.getElementsByClassName('vip-option');
+        for (let option of options) {
+            option.addEventListener('click', function() {
+                const selectedOptions = container.querySelectorAll('.vip-option.selected');
+                if (this.classList.contains('selected')) {
+                    this.classList.remove('selected');
+                } else {
+                    if (selectedOptions.length >= 2) {
+                        alert("Możesz wybrać maksymalnie 2 opcji z tej sekcji!");
+                    } else {
+                        this.classList.add('selected');
+                    }
+                }
+            });
+        }
+    }
+    setupGridSelection('gridExtras');
+    setupGridSelection('gridServing');
+
+    function getGridValues(gridId) {
+        const container = document.getElementById(gridId);
+        const selected = container.querySelectorAll('.vip-option.selected');
+        const values = [];
+        selected.forEach(el => values.push(el.getAttribute('data-value')));
+        return values.length > 0 ? values.join(' + ') : 'Brak';
+    }
+
+    function setGridValues(gridId, sharedString) {
+        const container = document.getElementById(gridId);
+        const options = container.getElementsByClassName('vip-option');
+        if (!sharedString) return;
+        const valuesArray = sharedString.split(' + ');
+        for (let option of options) {
+            if (valuesArray.includes(option.getAttribute('data-value'))) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        }
+    }
+
+    function clearGrids() {
+        document.querySelectorAll('.vip-option').forEach(el => el.classList.remove('selected'));
+    }
+
+    // --- DYNAMICZNE POLA TEKSTOWE ---
+    function updateDynamicFields() {
+        const category = document.getElementById('category').value;
+        const container = document.getElementById('dynamicFieldsContainer');
+        container.innerHTML = '';
+
+        let fieldsToCreate = [];
+        if (category === 'Jedzenie') {
+            fieldsToCreate = [{ id: 'order_food', label: '🍕 Co z jedzenia chcesz zamówić?', placeholder: 'Wpisz swoje zamówienie na jedzenie...' }];
+        } else if (category === 'Picie') {
+            fieldsToCreate = [{ id: 'order_drinks', label: '🥤 Co do picia chcesz zamówić?', placeholder: 'Wpisz swoje zamówienie na napoje...' }];
+        } else if (category === 'Przekąski') {
+            fieldsToCreate = [{ id: 'order_snacks', label: '🍿 Jakie przekąski chcesz zamówić?', placeholder: 'Wpisz swoje zamówienie na przekąski...' }];
+        } else if (category === 'Jedzenie i Picie') {
+            fieldsToCreate = [
+                { id: 'order_food', label: '🍕 Zamówienie na Jedzenie:', placeholder: 'Wpisz co do jedzenia...' },
+                { id: 'order_drinks', label: '🥤 Zamówienie na Picie:', placeholder: 'Wpisz co do picia...' }
+            ];
+        } else if (category === 'Jedzenie i Przekąski') {
+            fieldsToCreate = [
+                { id: 'order_food', label: '🍕 Zamówienie na Jedzenie:', placeholder: 'Wpisz co do jedzenia...' },
+                { id: 'order_snacks', label: '🍿 Zamówienie na Przekąski:', placeholder: 'Wpisz jakie przekąski...' }
+            ];
+        } else if (category === 'Picie i Przekąski') {
+            fieldsToCreate = [
+                { id: 'order_drinks', label: '🥤 Zamówienie na Picie:', placeholder: 'Wpisz co do picia...' },
+                { id: 'order_snacks', label: '🍿 Zamówienie na Przekąski:', placeholder: 'Wpisz jakie przekąski...' }
+            ];
+        } else if (category === 'Wszystko (Jedzenie, Picie i Przekąski)' || category === 'VIP') {
+            fieldsToCreate = [
+                { id: 'order_food', label: '🍕 Zamówienie na Jedzenie:', placeholder: 'Wpisz co do jedzenia...' },
+                { id: 'order_drinks', label: '🥤 Zamówienie na Picie:', placeholder: 'Wpisz co do picia...' },
+                { id: 'order_snacks', label: '🍿 Zamówienie na Przekąski:', placeholder: 'Wpisz jakie przekąski...' }
+            ];
+        }
+
+        fieldsToCreate.forEach(field => {
+            const div = document.createElement('div');
+            div.className = 'sub-field';
+            div.innerHTML = `
+                <label for="${field.id}">${field.label}</label>
+                <textarea id="${field.id}" rows="2" placeholder="${field.placeholder}" required></textarea>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function handleCategoryChange() {
+        const category = document.getElementById('category').value;
+        const vipBox = document.getElementById('vipUnlockBox');
+        const vipFields = document.getElementById('vipSpecialFields');
+        const mainTitle = document.getElementById('mainTitle');
+
+        updateDynamicFields();
+        updateUnitOptions(category); // Aktualizacja listy jednostek pod kategorię
+
+        if (category === 'VIP') {
+            if (!isVipUnlocked) {
+                vipBox.style.display = 'block';
+                vipFields.style.display = 'none';
+                document.getElementById('submitBtn').disabled = true;
+                document.getElementById('submitBtn').style.opacity = "0.5";
+            } else {
+                vipBox.style.display = 'none';
+                vipFields.style.display = 'block';
+            }
+            mainTitle.innerText = "⭐ Domowe Zamówienie VIP ⭐";
+        } else {
+            vipBox.style.display = 'none';
+            vipFields.style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').style.opacity = "1";
+            mainTitle.innerText = "🍕 System Zamówień 🥤";
+        }
+    }
+
+    function verifyVipPassword() {
+        const entered = document.getElementById('vipInputPassword').value;
+        const correct = localStorage.getItem('vipPassword');
+        if (entered === correct) {
+            isVipUnlocked = true;
+            document.getElementById('vipUnlockBox').style.display = 'none';
+            document.getElementById('vipSpecialFields').style.display = 'block';
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').style.opacity = "1";
+            alert('Strefa VIP odblokowana!');
+        } else {
+            alert('Niepoprawne hasło VIP!');
+        }
+    }
+
+    function formatDate(dateString) {
+        if (!dateString || dateString.trim() === "") return '-';
+        const options = { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+        return new Date(dateString).toLocaleDateString('pl-PL', options);
+    }
+
+    // --- AUTOMATYCZNE USUWANIE ZAMÓWIEŃ PO 5 MINUTACH ---
+    function autoCleanOldReservations() {
+        const now = new Date().getTime();
+        let currentReservations = JSON.parse(localStorage.getItem('reservations')) || [];
+        let updatedReservations = currentReservations.filter(res => {
+            if (!res.timeTarget) return true; 
+            const targetTime = new Date(res.timeTarget).getTime();
+            const fiveMinutes = 5 * 60 * 1000; 
+            return now <= (targetTime + fiveMinutes);
+        });
+
+        if (currentReservations.length !== updatedReservations.length) {
+            reservations = updatedReservations;
+            localStorage.setItem('reservations', JSON.stringify(reservations));
+            if (document.getElementById('chefContent').style.display === 'block') {
+                renderReservations();
+            }
+        }
+    }
+    setInterval(autoCleanOldReservations, 60000);
+
+    // --- ZAPIS FORMULARZA ---
+    document.getElementById('reservationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const category = document.getElementById('category').value;
+
+        const orderData = {};
+        if (document.getElementById('order_food')) orderData.food = document.getElementById('order_food').value;
+        if (document.getElementById('order_drinks')) orderData.drinks = document.getElementById('order_drinks').value;
+        if (document.getElementById('order_snacks')) orderData.snacks = document.getElementById('order_snacks').value;
+
+        const reservationData = {
+            id: editingId ? editingId : Date.now(),
+            category: category,
+            quantityUnit: document.getElementById('quantityUnit').value,
+            quantityValue: document.getElementById('quantityValue').value,
+            orderContent: JSON.stringify(orderData),
+            extras: document.getElementById('extras').value,
+            location: getSelectedLocation(),
+            vipPremiumExtras: category === 'VIP' ? getGridValues('gridExtras') : 'Brak',
+            vipServing: category === 'VIP' ? getGridValues('gridServing') : 'Standardowe',
+            timeTarget: document.getElementById('timeTarget').value,
+            clientName: document.getElementById('clientName').value,
+            signature: canvas.toDataURL() === document.createElement('canvas').toDataURL() ? "Brak podpisu" : canvas.toDataURL()
+        };
+
+        if (editingId) {
+            reservations = reservations.map(res => res.id === editingId ? reservationData : res);
+            editingId = null;
+            document.getElementById('submitBtn').className = "btn-primary";
+            document.getElementById('submitBtn').innerText = "Złóż rezerwację";
+        } else {
+            reservations.push(reservationData);
+        }
+
+        localStorage.setItem('reservations', JSON.stringify(reservations));
+        document.getElementById('reservationForm').reset();
+        
+        isVipUnlocked = false;
+        document.getElementById('vipInputPassword').value = '';
+        document.getElementById('customLocationInput').style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        clearGrids();
+        handleCategoryChange();
+
+        const hint = document.querySelector('.signature-hint');
+        if(hint) hint.style.opacity = '1';
+
+        alert('Zapisano zamówienie!');
+        renderReservations();
+    });
+
+    // --- PANEL KUCHARZA ---
+    function checkPassword() {
+        const entered = document.getElementById('chefPassword').value;
+        const current = localStorage.getItem('chefPassword');
+        if (entered === current) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('chefContent').style.display = 'block';
+            autoCleanOldReservations(); 
+            renderReservations();
+        } else {
+            alert('Błędne hasło kucharza!');
+        }
+    }
+
+    function logoutChef() {
+        document.getElementById('chefPassword').value = '';
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('chefContent').style.display = 'none';
+    }
+
+    function changePassword(localStorageKey, inputFieldId) {
+        const newPass = document.getElementById(inputFieldId).value;
+        if (newPass.trim() !== "") {
+            localStorage.setItem(localStorageKey, newPass);
+            alert('Hasło zmienione!');
+            document.getElementById(inputFieldId).value = '';
+        } else {
+            alert('Hasło nie może być puste!');
+        }
+    }
+
+    function renderReservations() {
+        const listContainer = document.getElementById('reservationsList');
+        listContainer.innerHTML = '';
+
+        if (reservations.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center; font-size:12px; color:#777;">Brak zamówień.</p>';
+            return;
+        }
+
+        reservations.sort((a, b) => new Date(a.timeTarget) - new Date(b.timeTarget));
+        reservations.forEach(res => {
+            const card = document.createElement('div');
+            const isVip = res.category === 'VIP';
+            card.className = `reservation-card ${isVip ? 'vip-card' : ''}`;
+            
+            const labelCategory = isVip ? `<span class="badge-vip">⭐ VIP</span>` : `<b>${res.category}</b>`;
+            const extrasText = res.extras && res.extras.trim() !== "" ? res.extras : 'brak';
+            const locationText = res.location ? res.location : 'Nie podano';
+            const amountText = (res.quantityValue && res.quantityUnit) ? `${res.quantityValue} ${res.quantityUnit}` : 'Nie podano';
+
+            let orderDisplayHtml = '';
+            try {
+                const orderData = JSON.parse(res.orderContent);
+                if (orderData.food) orderDisplayHtml += `🍕 <b>Jedzenie:</b> ${orderData.food} `;
+                if (orderData.drinks) orderDisplayHtml += `🥤 <b>Picie:</b> ${orderData.drinks} `;
+                if (orderData.snacks) orderDisplayHtml += `🍿 <b>Przekąski:</b> ${orderData.snacks} `;
+            } catch(e) {
+                orderDisplayHtml = res.orderContent;
+            }
+
+            let vipDetailsHtml = '';
+            if (isVip) {
+                vipDetailsHtml = `
+                    <div class="mini-vip-details">
+                        <b>Życzenia:</b> ${res.vipPremiumExtras}<br>
+                        <b>Podanie:</b> ${res.vipServing}
+                    </div>
+                `;
+            }
+
+            let signatureHtml = '<em>brak podpisu</em>';
+            if (res.signature && res.signature.startsWith('data:image')) {
+                signatureHtml = `<img src="${res.signature}" class="chef-signature-img" alt="Podpis klienta">`;
+            }
+
+            card.innerHTML = `
+                <div>${labelCategory} | <b>Klient:</b> ${res.clientName}</div>
+                <div style="margin-top: 2px; margin-bottom: 2px;">${orderDisplayHtml} <span style="color:#777;">(Dodatki: ${extrasText})</span></div>
+                <div style="margin-bottom: 2px;">⚖️ <b>Ilość:</b> <span style="color:#2c3e50; font-weight:bold;">${amountText}</span></div>
+                <div style="margin-bottom: 2px;">📍 <b>Miejsce dostawy:</b> <span style="color: #2980b9; font-weight: bold;">${locationText}</span></div>
+                ${vipDetailsHtml}
+                <div style="margin-top: 4px; margin-bottom: 4px;">✍️ <b>Podpis:</b> ${signatureHtml}</div>
+                <div style="color: #555; font-size: 11px; margin-top: 2px;">
+                    🕒 Gotowe na: ${formatDate(res.timeTarget)}
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn-edit" onclick="window.editReservation(${res.id})">Edytuj</button>
+                    <button type="button" class="btn-danger" onclick="window.deleteReservation(${res.id})">Usuń</button>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+    // GLOBALNE BINDOWANIE USUWANIA
+    window.deleteReservation = function(id) {
+        if (confirm('Na pewno chcesz usunąć to zamówienie?')) {
+            reservations = reservations.filter(res => res.id !== id);
+            localStorage.setItem('reservations', JSON.stringify(reservations));
+            renderReservations(); 
+        }
+    };
+
+    window.editReservation = function(id) {
+        const res = reservations.find(r => r.id === id);
+        if (res) {
+            editingId = id;
+            document.getElementById('category').value = res.category;
+            
+            if (res.category === 'VIP') isVipUnlocked = true; 
+            handleCategoryChange();
+
+            // Przywracanie poprawnej jednostki na bazie kategorii i ustawienie wartości
+            updateUnitOptions(res.category);
+            document.getElementById('quantityUnit').value = res.quantityUnit || 'kg';
+            document.getElementById('quantityValue').value = res.quantityValue || '';
+
+            try {
+                const orderData = JSON.parse(res.orderContent);
+                if (document.getElementById('order_food') && orderData.food) document.getElementById('order_food').value = orderData.food;
+                if (document.getElementById('order_drinks') && orderData.drinks) document.getElementById('order_drinks').value = orderData.drinks;
+                if (document.getElementById('order_snacks') && orderData.snacks) document.getElementById('order_snacks').value = orderData.snacks;
+            } catch(e) {
+                if (document.getElementById('order_food')) document.getElementById('order_food').value = res.orderContent;
+            }
+
+            document.getElementById('extras').value = res.extras || '';
+            setSelectedLocation(res.location || 'Pokój');
+
+            if (res.category === 'VIP') {
+                setGridValues('gridExtras', res.vipPremiumExtras);
+                setGridValues('gridServing', res.vipServing);
+                document.getElementById('submitBtn').className = "btn-vip";
+            } else {
+                document.getElementById('submitBtn').className = "btn-primary";
+                clearGrids();
+            }
+
+            document.getElementById('timeTarget').value = res.timeTarget;
+            document.getElementById('clientName').value = res.clientName;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if(res.signature && res.signature !== "Brak podpisu") {
+                const img = new Image();
+                img.onload = function() { ctx.drawImage(img, 0, 0); };
+                img.src = res.signature;
+                document.querySelector('.signature-hint').style.opacity = '0';
+            }
+
+            document.getElementById('submitBtn').innerText = "Zapisz zmiany";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    autoCleanOldReservations();
+    handleCategoryChange(); // Uruchamia poprawne opcje na start skryptu
+</script>
+
+</body>
+</html>
